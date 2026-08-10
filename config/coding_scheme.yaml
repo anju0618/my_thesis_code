@@ -1,0 +1,113 @@
+# ============================================================
+# コーディングスキーム（構造化コーディングのラベル定義）
+#
+# 卒論の理論編（第1〜3部）で導入した各概念を，YouTube コメント
+# 1件ごとに判定可能な変数へと「操作化（operationalize）」したもの。
+# label_ollama.py はこのファイルを読み込み，各コメントについて
+# 以下の変数をLLMに判定させる。
+#
+# 各変数には，どの節・どの文献のどのページに基づく定義かを明記する。
+# 卒論本文（第4部）でコーディングスキームを説明する際は，このファイルを
+# そのまま「操作化の一覧表」として使うことができる。
+# ============================================================
+
+variables:
+
+  - name: people_vs_elite
+    type: boolean
+    theory_basis: >
+      Mudde & Rovira Kaltwasser (2017), pp.5-6（notes/mudde2017.md参照）。
+      社会を「純粋な人民」対「腐敗したエリート」という同質的・敵対的な
+      二陣営に分離するポピュリズムの核心的フレーミング。
+    definition_ja: >
+      コメントが「自分たち（一般国民・庶民）」対「奴ら（財務省・政治家・
+      既得権層・マスメディア等のエリート）」という二項対立の図式で
+      語られているか。
+    positive_examples:
+      - "財務省は国民の敵だ、増税ばかりして自分たちは甘い汁吸ってる"
+      - "政治家は自分の利権しか考えてない、庶民の生活は見てない"
+    negative_examples:
+      - "この政策の是非については色々な意見があると思う"
+
+  - name: economic_resentment
+    type: boolean
+    theory_basis: >
+      Ricci (2020), pp.viii-ix, p.52（notes/ricci2020.md参照）。新自由主義的な
+      経済的破壊によって生活を強いられた人々が抱く「正当な怨恨（resentment）」。
+    definition_ja: >
+      コメントが，増税・物価高・賃金停滞・格差拡大など，自らの経済的
+      苦境への直接的な言及と，それに対する怒り・不公平感を含んでいるか。
+    positive_examples:
+      - "手取りが全然増えないのに税金だけ上がっていく、もう限界"
+    negative_examples:
+      - "経済政策について詳しく知りたい"
+
+  - name: theft_of_enjoyment
+    type: boolean
+    theory_basis: >
+      Kawamura & Iwabuchi (2022)（notes/kawamura2022.md参照）。「享楽の盗取
+      （theft of enjoyment）」＝自分たちの利益・生活が特定の他者（外国人，
+      別の集団など）によって不当に奪われているという被害感情の構造。
+    definition_ja: >
+      コメントが，具体的な「奪う主体」（外国人，特定の民族・国籍，
+      特定の党派など）を名指しし，「自分たちの取り分・安全・文化が
+      奪われている」という被害感情を表現しているか。
+      economic_resentment との違い：本変数は「奪う主体」が名指しされて
+      いることが条件（抽象的な経済苦境の訴えだけでは該当しない）。
+    positive_examples:
+      - "外国人ばかり優遇されて日本人が割を食ってる"
+      - "移民に生活保護や税金を使われて、こっちの税負担が増えてる"
+    negative_examples:
+      - "景気が悪くて生活が苦しい"
+
+  - name: blame_target
+    type: categorical
+    options:
+      - media          # マスメディア（新聞・テレビ・既存メディア全般）
+      - government      # 政府・与党・官僚（財務省含む）
+      - specific_party  # 特定の政党（野党含む）
+      - foreign_country # 特定の外国・外国政府
+      - immigrants      # 外国人・移民一般（特定国籍を問わない場合を含む）
+      - elites_general  # 上記に当てはまらない「エリート」一般
+      - none            # 名指しされた非難対象がない
+    theory_basis: >
+      Fujishiro et al. (2020), p.315（notes/fujishiro2020.md参照）。日本の
+      オンライン上の分断は「保守 vs リベラル」ではなく「リベラル vs
+      排外主義（反マスメディア含む）」という軸で捉えるべきという知見。
+      本変数はこの軸を検証するため，非難の矛先を分類する。
+    definition_ja: >
+      コメントが明示的に非難・攻撃している対象を1つ選ぶ（複数該当時は
+      最も強く非難されている対象を選ぶ）。
+
+  - name: emotional_tone
+    type: categorical
+    options:
+      - anger
+      - contempt        # 侮蔑・見下し
+      - fear             # 不安・恐怖
+      - resignation      # 諦め・無力感
+      - neutral_factual  # 感情的でない事実言及・議論
+    theory_basis: >
+      Törnberg（対立的接触による情動的分極化）およびBennett & Livingston
+      (2020) の「怒りの物語」概念（sections/03_digital.texで使用）を，
+      コメント単位の感情トーンとして操作化したもの。
+
+  - name: is_spam_or_offtopic
+    type: boolean
+    definition_ja: >
+      広告・Bot・動画内容と無関係な雑談等，分析対象から除外すべきコメント。
+      true の場合，他の変数はすべて null として扱う。
+
+# ============================================================
+# 出力フォーマット（label_ollama.py が期待するJSON構造）
+# ============================================================
+output_schema_note: >
+  {
+    "people_vs_elite": bool,
+    "economic_resentment": bool,
+    "theft_of_enjoyment": bool,
+    "blame_target": "media|government|specific_party|foreign_country|immigrants|elites_general|none",
+    "emotional_tone": "anger|contempt|fear|resignation|neutral_factual",
+    "is_spam_or_offtopic": bool,
+    "rationale_ja": "判定理由を1文で（検証・エラー分析用）"
+  }

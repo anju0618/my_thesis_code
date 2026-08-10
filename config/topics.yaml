@@ -1,0 +1,41 @@
+# 分析対象トピックの定義
+#
+# search_queries: YouTube検索クエリ（動画を自動で見つけるために使う）
+# video_ids: 手動で選んだ特定動画のID（URLの v=XXXXXXXXXXX の部分）
+#   コメント欄が荒れている／議論が濃い動画を自分の目で確認してから
+#   ここに追加していくのが望ましい（検索だけに頼るとノイズが多い）。
+# channel_ids: 特定チャンネルの動画をまとめて集めたい場合に使う（未実装、拡張用）
+
+topics:
+  zaimusho_demo:
+    label_ja: "財務省デモ・財務省解体・減税"
+    search_queries:
+      - "財務省 解体デモ"
+      - "財務省 デモ"
+      - "減税 デモ"
+      - "財務省 増税 批判"
+    video_ids: ["99gnMDe_b_E", "hei4k31fbV8", "yNwydNtwewM", "D2vBNxvpQKk", "bZ-AYYDY7d0"]
+
+  sanseito:
+    label_ja: "参政党"
+    search_queries:
+      - "参政党 街頭演説"
+      - "参政党 神谷宗幣"
+      - "参政党 ニュース"
+    video_ids: []
+
+  immigration:
+    label_ja: "不法移民・外国人問題"
+    search_queries:
+      - "不法移民 日本 ニュース"
+      - "外国人 犯罪 ニュース"
+      - "クルド人 川口"
+      - "技能実習 不法滞在"
+    video_ids: ["0iQBN1jgAvU", "gmQM7pweY50", "DkLNScAyAOM"]
+
+# 収集時のデフォルト設定
+defaults:
+  max_videos_per_query: 15       # 検索クエリ1件あたり取得する動画数の上限
+  max_comments_per_video: 500    # 動画1件あたり取得するトップレベルコメント数の上限
+  include_replies: true          # 返信コメントも取得するか
+  language_hint: "ja"
