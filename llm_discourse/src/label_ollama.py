@@ -118,15 +118,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=None, help="処理するコメント数の上限（動作確認用）")
     parser.add_argument("--model", default=None, help="使用するOllamaモデル名（省略時は.envまたはデフォルト）")
+    parser.add_argument(
+        "--input", type=Path, default=INPUT_PATH,
+        help="入力CSVのパス（省略時はcomments.csv全件。sample_comments.pyで作った"
+        "comments_sample.csvを指定するとサンプルのみラベリングできる）",
+    )
     args = parser.parse_args()
 
     load_dotenv(ANALYSIS_ROOT / ".env")
     model = args.model or os.environ.get("OLLAMA_MODEL", DEFAULT_MODEL)
 
-    if not INPUT_PATH.exists():
-        sys.exit(f"{INPUT_PATH} がありません。先に preprocess.py を実行してください。")
+    if not args.input.exists():
+        sys.exit(f"{args.input} がありません。先に preprocess.py を実行してください。")
 
-    df = pd.read_csv(INPUT_PATH)
+    df = pd.read_csv(args.input)
     if args.limit:
         df = df.head(args.limit)
 

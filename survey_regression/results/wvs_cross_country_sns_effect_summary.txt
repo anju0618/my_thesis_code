@@ -1,0 +1,17 @@
+WVS Time Series 国際比較: Wave 7における「SNS利用頻度 -> 制度への信頼」の効果
+（p<0.05のものに*を付与。OLS-R2/RF-R2は5分割交差検証の平均R^2）
+====================================================================================================
+
+--- 目的変数: trust_parl (議会への信頼 (E069_07)) ---
+Japan            trust_parl    N= 1165  SNS係数=+0.0044 p=0.7467   OLS-R2=0.0271  RF-R2=0.0165
+United States    trust_parl    N= 2483  SNS係数=+0.0049 p=0.5901   OLS-R2=0.0157  RF-R2=0.0098
+South Korea      trust_parl    N= 1245  SNS係数=+0.0302 p=0.0703   OLS-R2=-0.0067  RF-R2=0.0067
+Germany          trust_parl    N= 1454  SNS係数=+0.0066 p=0.6259   OLS-R2=0.0181  RF-R2=0.0179
+United Kingdom   trust_parl    N= 2229  SNS係数=-0.0224 p=0.0281*  OLS-R2=0.0517  RF-R2=0.0409
+
+--- 目的変数: trust_civil (公務員への信頼 (E069_08)) ---
+Japan            trust_civil   N= 1183  SNS係数=-0.0001 p=0.9968   OLS-R2=0.0272  RF-R2=0.0436
+United States    trust_civil   N= 2470  SNS係数=+0.0162 p=0.1023   OLS-R2=0.0291  RF-R2=0.0275
+South Korea      trust_civil   N= 1245  SNS係数=+0.0155 p=0.2778   OLS-R2=0.0046  RF-R2=0.0014
+Germany          trust_civil   N= 1475  SNS係数=+0.0040 p=0.7347   OLS-R2=-0.0105  RF-R2=-0.0041
+United Kingdom   trust_civil   N= 2143  SNS係数=+0.0054 p=0.6207   OLS-R2=0.0011  RF-R2=0.0034

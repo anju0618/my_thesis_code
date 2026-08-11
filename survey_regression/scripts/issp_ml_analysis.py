@@ -50,7 +50,10 @@ RESULTS_DIR = ROOT / "results"
 JAPAN_COUNTRY_CODE = 392
 INTERNET_RATE = {1996: 9.2, 2006: 72.6, 2016: 83.5}
 
-FEATURE_COLS = ["year", "internet_rate", "age", "sex", "education", "pol_interest"]
+FEATURE_COLS = [
+    "year", "internet_rate", "age", "sex", "education", "pol_interest",
+    "is_unemployed", "is_not_in_labor_force",
+]
 TARGETS = {
     "no_say": "政治的有効性感覚の欠如",
     "trust_civil": "公務員への信頼",
@@ -61,7 +64,7 @@ TARGETS = {
 def load_japan_data() -> pd.DataFrame:
     df, _ = pyreadstat.read_sav(DATA_PATH)
     df_jp = df[df["country"] == JAPAN_COUNTRY_CODE][
-        ["year_sdno", "v60", "v61", "v66", "v73", "AGE", "SEX", "DEGREE"]
+        ["year_sdno", "v60", "v61", "v66", "v73", "AGE", "SEX", "DEGREE", "WORKYN"]
     ].rename(
         columns={
             "year_sdno": "year",
@@ -76,6 +79,13 @@ def load_japan_data() -> pd.DataFrame:
     )
     df_jp["year"] = df_jp["year"].astype(int)
     df_jp["internet_rate"] = df_jp["year"].map(INTERNET_RATE)
+    # WORKYN: 1=Employed, 2=Unemployed, 3=Not in labour force（ISSP全3時点で共通調査）。
+    # 「経済的破壊の当事者性」を測る変数が年齢・学歴等の人口統計学的変数のみで
+    # あるという限界（academic_review 2026-08-11, 3.1節）を受け，雇用状態を
+    # 追加した。Employedを基準カテゴリとする2つのダミー変数に変換する。
+    df_jp["is_unemployed"] = (df_jp["WORKYN"] == 2).astype(float)
+    df_jp["is_not_in_labor_force"] = (df_jp["WORKYN"] == 3).astype(float)
+    df_jp.loc[df_jp["WORKYN"].isna(), ["is_unemployed", "is_not_in_labor_force"]] = pd.NA
     return df_jp
 
 
@@ -132,6 +142,33 @@ def shap_analysis(df: pd.DataFrame, target: str) -> None:
     print(f"  SHAP出力: shap_summary_{target}.png, shap_dependence_year_{target}.png")
 
 
+def choose_k(X_scaled: np.ndarray, out_lines: list[str], k_range: range = range(2, 7)) -> int:
+    """エルボー法（inertia）とシルエット係数によりKを選定する。
+
+    academic_review 2026-08-11 (1.2節) の指摘——付録がエルボー法/シルエット
+    係数によるK選定を説明しているにもかかわらず実装ではK=3が決め打ちに
+    なっていた不一致——を解消するため，実際に両指標を計算して記録する。
+    """
+    from sklearn.metrics import silhouette_score
+
+    out_lines.append(f"\n{'=' * 70}\nK-means: クラスタ数の選定（エルボー法・シルエット係数）\n{'=' * 70}")
+    inertias, silhouettes = [], []
+    for k in k_range:
+        km = KMeans(n_clusters=k, random_state=0, n_init=10)
+        labels = km.fit_predict(X_scaled)
+        inertias.append(km.inertia_)
+        sil = silhouette_score(X_scaled, labels)
+        silhouettes.append(sil)
+        out_lines.append(f"  K={k}: inertia={km.inertia_:.1f}  silhouette={sil:.4f}")
+
+    best_k_by_silhouette = list(k_range)[int(np.argmax(silhouettes))]
+    out_lines.append(f"シルエット係数が最大となるK: {best_k_by_silhouette}"
+                      f"（値={max(silhouettes):.4f}）")
+    out_lines.append("エルボー法は目視判断が必要なため，inertiaの値を上記に記録した"
+                      "（急激な減少が緩やかになる『肘』の位置を確認する）。")
+    return best_k_by_silhouette
+
+
 def cluster_analysis(df: pd.DataFrame, out_lines: list[str]) -> None:
     cluster_vars = ["no_say", "trust_civil", "corruption", "pol_interest"]
     data = df.dropna(subset=cluster_vars).copy()
@@ -139,11 +176,20 @@ def cluster_analysis(df: pd.DataFrame, out_lines: list[str]) -> None:
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(data[cluster_vars])
 
+    best_k_by_silhouette = choose_k(X_scaled, out_lines)
+
+    # 論文本文（第4部）の記述との対応・年別構成比の解釈可能性を優先し，
+    # 本稿では引き続きK=3を採用する。シルエット係数上の最適値との異同は
+    # choose_k()の出力（cluster_summary.txt）に記録済みであり，両者が
+    # 一致しない場合はその旨を限界として本文に明記すること。
     k = 3
     km = KMeans(n_clusters=k, random_state=0, n_init=10)
     data["cluster"] = km.fit_predict(X_scaled)
 
-    out_lines.append(f"\n{'=' * 70}\nクラスタ分析 (K-means, k={k}, N={len(data)})\n{'=' * 70}")
+    out_lines.append(
+        f"\n{'=' * 70}\nクラスタ分析 (K-means, k={k}, N={len(data)}；"
+        f"シルエット係数最適値はK={best_k_by_silhouette}）\n{'=' * 70}"
+    )
     cluster_means = data.groupby("cluster")[cluster_vars].mean().round(2)
     out_lines.append(cluster_means.to_string())
 

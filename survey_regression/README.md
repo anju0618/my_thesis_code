@@ -60,6 +60,21 @@ uv sync   # pyproject.toml / uv.lock から .venv を作成・依存関係イン
   (1)1981--2019年の制度への信頼の長期トレンド，(2)Wave 6+7プールでの
   メディア利用（インターネット/テレビ/新聞）効果分析，(3)Wave 7限定での
   SNS利用を含む4変数の効果分析（OLS対Random Forest比較・SHAP）を行う。
+- `scripts/wvs_cross_country_analysis.py`: WVS Time Seriesの**国際比較**分析
+  （2026-08-11追加，日本の分析結果が日本固有の現象か国際的に共通する現象かを
+  検証するため）。対象国は日本・アメリカ・韓国・ドイツ・イギリスの5か国
+  （`COUNTRIES`辞書で変更可能。Wave 7でSNS利用変数が使える国は他に60か国
+  ある）。(1)議会・公務員への信頼の長期トレンドを国別に重ね描き，
+  (2)Wave 7限定で「SNS利用→信頼」の効果（OLS係数・p値，OLS対RF比較，SHAP）を
+  国ごとに算出し比較表にまとめる。**結果**：日本・アメリカ・ドイツでは
+  議会・公務員信頼のどちらに対してもSNS利用頻度は非有意（韓国も議会信頼で
+  $p=0.070$とほぼ非有意）で日本の結果とおおむね整合的だったが，
+  **イギリスのみ議会信頼に対して統計的に有意な負の効果**
+  （係数$-0.0224$，$p=0.028$）が観察された。「SNS利用は信頼に有意な効果を
+  持たない」という日本の知見は多くの国で再現されるが，普遍的ではない
+  ことを示す結果であり，卒論本文への反映は未定（要検討）。詳細は
+  `results/wvs_cross_country_sns_effect_summary.txt`および
+  `results/wvs_cross_country_trend_*.png`, `results/wvs_cross_country_shap_*.png`。
 - `scripts/issp_analysis.py`: ISSP日本データのOLS回帰分析（旧`Role of
   Government.r`のPython再実装，比較用ベースライン）。
 - `scripts/issp_role_of_government.R` / `scripts/wvs_wave7.R` /

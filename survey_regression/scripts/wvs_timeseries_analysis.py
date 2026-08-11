@@ -52,6 +52,7 @@ RAW_COLS = [
     "E069_07", "E069_08", "E069_11", "E069_12",  # 信頼: 議会/公務員/政府/政党
     "E253B", "E262B", "E258B", "E248B",            # メディア利用: SNS/インターネット/TV/新聞
     "X001", "X003", "X025R",                         # 性別/年齢/学歴（X025Rはwave4-7で利用可能）
+    "X028", "X047R_WVS",                             # 雇用状態/主観的所得水準（Wave6-7で利用可能）
 ]
 
 TRUST_TARGETS = {
@@ -59,7 +60,10 @@ TRUST_TARGETS = {
     "trust_civil": "公務員への信頼 (E069_08)",
 }
 
-CONTROL_FEATURES = ["age", "sex", "education"]
+# 「経済的破壊の当事者性」を測る変数が人口統計学的属性のみという限界
+# （academic_review 2026-08-11, 3.1節）に対応するため，雇用状態（失業/非労働力）
+# と主観的所得水準を追加する。
+CONTROL_FEATURES = ["age", "sex", "education", "is_unemployed", "is_not_in_labor_force", "income_level"]
 
 # E253B（SNS利用）はWave 7（2019年）でのみ調査されており，Wave 6（2010年）には
 # 存在しない。internet_use/tv_news_use/newspaper_useはWave 6-7両方で調査されて
@@ -79,12 +83,22 @@ def load_japan_data() -> pd.DataFrame:
             "E253B": "sns_raw", "E262B": "internet_raw",
             "E258B": "tv_news_raw", "E248B": "newspaper_raw",
             "X001": "sex", "X003": "age", "X025R": "education",
+            "X028": "employment_raw", "X047R_WVS": "income_level_raw",
         }
     )
     # 信頼度: 1(great deal)-4(none at all) -> 反転して「高いほど信頼が高い」に統一
     for src, dst in [("trust_parl_raw", "trust_parl"), ("trust_civil_raw", "trust_civil"),
                       ("trust_gov_raw", "trust_gov"), ("trust_parties_raw", "trust_parties")]:
         jp[dst] = 5 - jp[src]
+    # 雇用状態（X028: 1=Full time,2=Part time,3=Self employed,4=Retired,
+    # 5=Housewife,6=Students,7=Unemployed,8=Other）をISSP分析と同じ枠組みで
+    # is_unemployed / is_not_in_labor_force の2ダミーに変換（Employed=基準）。
+    jp["is_unemployed"] = (jp["employment_raw"] == 7).astype(float)
+    jp["is_not_in_labor_force"] = jp["employment_raw"].isin([4, 5, 6, 8]).astype(float)
+    jp.loc[jp["employment_raw"] < 0, ["is_unemployed", "is_not_in_labor_force"]] = pd.NA
+    jp.loc[jp["employment_raw"].isna(), ["is_unemployed", "is_not_in_labor_force"]] = pd.NA
+    # 主観的所得水準（X047R_WVS: 1=Low, 2=Medium, 3=High）。負値は欠損コード。
+    jp["income_level"] = jp["income_level_raw"].where(jp["income_level_raw"] > 0)
     # メディア利用: 1(daily)-5(never) -> 反転して「高いほど利用頻度が高い」に統一
     for src, dst in [("sns_raw", "sns_use"), ("internet_raw", "internet_use"),
                       ("tv_news_raw", "tv_news_use"), ("newspaper_raw", "newspaper_use")]:
