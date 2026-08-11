@@ -1,0 +1,91 @@
+\documentclass[uplatex, dvipdfmx, a4paper, 11pt]{jsarticle}
+
+% --- 日本語環境用設定 (uplatex) ---
+\usepackage[top=25truemm,bottom=25truemm,left=25truemm,right=25truemm]{geometry}
+
+% --- 追加パッケージ ---
+\usepackage[dvipdfmx]{graphicx} % 画像読み込み用
+\usepackage{booktabs}           % 表の罫線を美しくする
+\usepackage{url}                % URLの表示
+\usepackage{float}              % 図表の位置固定 [H] 用
+\usepackage{amsmath}            % 数式
+
+% --- 箇条書き設定（パッケージを使わない方法に変更）---
+% enumitemパッケージの代わりに、標準コマンドで記号を変更します
+\renewcommand{\labelitemi}{--} 
+
+% --- タイトル情報 ---
+\title{インターネットと民主主義：\\誤情報・分極化・政治的信頼に関する実証分析\\ \large{―日本における「デジタル・ジレンマ」とマスメディアの役割（中間報告）―}}
+\author{明治大学 政治経済学部 杉本ゼミ\\ 学籍番号 1320221226 牧野 杏珠}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本稿は、インターネットの普及とSNSの台頭が、日本の民主主義の基盤である「政治的信頼」に与える影響を実証的に検討するものである。ISSPデータ（1996-2016年）およびWVSデータ（2019年）を用いた探索的分析の結果、日本ではSNS利用による直接的な信頼毀損効果は確認されず、むしろ既存メディア（テレビ）の統合機能が依然として強力であることが示唆された。ただし、本分析は基本的な線形回帰モデルに基づくものであり、内生性や時系列特性に関する統計的課題を残している。本報告では、暫定的な分析結果とともに、これらの統計的限界についても詳述する。
+\end{abstract}
+
+\section{序論}
+現代社会は、かつて民主化の推進力として期待されたインターネットが、今や民主主義を蝕む要因となりつつあるというパラドックスに直面している。本稿では、日本社会において情報環境の変化が政治意識にどのような変容をもたらしたのかを検証する。
+
+\section{第I部：インターネット普及期の影響（ISSP分析）}
+\subsection{分析の結果}
+1996年から2016年までのISSPデータを用い、インターネット普及率が政治意識に与える影響を分析した（図\ref{fig:trend}）。
+
+\begin{figure}[H]
+    \centering
+    % 画像ファイル名 (拡張子 .png まで記述)
+    \includegraphics[width=0.9\textwidth]{graph1.png}
+    \caption{日本の政治意識の時系列変化 (1996-2016年)}
+    \label{fig:trend}
+\end{figure}
+
+回帰分析の結果（表\ref{fig:table1}, \ref{fig:table2}）、インターネット普及率の上昇は、政治的有効性感覚の欠如を有意に減少させる一方で、公務員への信頼も有意に低下させることが示された。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{table1.png}
+    \caption{インターネット普及率が政治的有効性と公務員信頼に与える影響}
+    \label{fig:table1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{table2.png}
+    \caption{インターネット普及率が政治家信頼に与える影響}
+    \label{fig:table2}
+\end{figure}
+
+\section{第II部：SNS成熟期の影響（WVS分析）}
+\subsection{分析の結果}
+次に、2019年のWVSデータを用いて、個人のメディア利用頻度が政治信頼に与える影響を検証した（表\ref{fig:table3}）。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{table3.png}
+    \caption{メディア利用が政治信頼に与える影響（WVS Wave 7）}
+    \label{fig:table3}
+\end{figure}
+
+\subsection{結果の解釈}
+SNS利用およびインターネット利用は、政党・議会・公務員のいずれの信頼に対しても統計的に有意な影響を与えていなかった。対照的に、テレビ視聴はすべての政治的信頼に対して正の有意な影響を与えており、日本におけるテレビの重要性が示唆された。
+
+\section{本分析の統計的限界と課題}
+以上の分析結果は、日本におけるメディア環境と政治意識の関係について興味深い示唆を与えるものであるが、統計学的な観点からは以下の重大な限界が存在することを付記しておく。
+
+\subsection{因果推論の課題（内生性）}
+本分析では単純な最小二乗法（OLS）を用いているが、メディア利用と政治信頼の間には「逆の因果関係」が存在する可能性がある。すなわち、SNSを利用するから政治信頼が下がるのではなく、元々政治不信が強い個人が、既存メディアを避けてネット情報を求めている可能性（選択バイアス）である。操作変数法（IV）などを用いた因果性の識別は行われていない。
+
+\subsection{除外変数のバイアス}
+本モデルでは年齢・性別・学歴のみを統制変数としているが、所得、居住地（都市・地方）、支持政党といった重要な変数がモデルに含まれていない（Omitted Variable Bias）。これらの変数がメディア利用と政治信頼の両方に影響を与えている場合、推定された係数はバイアスを含んでいる可能性がある。
+
+\subsection{時系列分析における課題}
+第I部のISSP分析においては、年ダミーの代わりにインターネット普及率を用いているが、これは単調増加するトレンド変数と高い相関を持つため、「見せかけの相関（Spurious Correlation）」である可能性を排除できない。また、時系列データの特性である自己相関（Autocorrelation）や定常性（Stationarity）の検定は行われておらず、標準誤差が過小評価されている恐れがある。
+
+\section{結論と今後の展望}
+本稿の暫定的な結論として、欧米的な「SNS脅威論」は日本にはそのまま当てはまらず、むしろテレビの影響力低下が政治的統合の危機をもたらす可能性が示唆された。
+今後は、前節で述べた統計的課題を克服するため、WVSの時系列統合データセット（Trend File）を用い、可能な限り多くの統制変数を投入したマルチレベル分析や、パネルデータに近い構造を用いた分析を検討する。
+
+\end{document}
