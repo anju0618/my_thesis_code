@@ -47,8 +47,11 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ANALYSIS_ROOT = Path(__file__).resolve().parent.parent
 LABELED_PATH = ANALYSIS_ROOT / "data" / "processed" / "labeled_comments.jsonl"
-EMBEDDINGS_PATH = ANALYSIS_ROOT / "data" / "processed" / "sample_embeddings.npy"
-EMBEDDINGS_IDS_PATH = ANALYSIS_ROOT / "data" / "processed" / "sample_embeddings_ids.csv"
+# final_embeddings.npy/csv はコーディング済み全件（comments_labeled_subset.csv）に
+# 対して embed.py --device cpu を再実行して作成したもので，旧sample_embeddings.npy
+# （初期6,000件サンプルのみ）より広い範囲をカバーする。
+EMBEDDINGS_PATH = ANALYSIS_ROOT / "data" / "processed" / "final_embeddings.npy"
+EMBEDDINGS_IDS_PATH = ANALYSIS_ROOT / "data" / "processed" / "final_embeddings_ids.csv"
 RESULTS_DIR = ANALYSIS_ROOT / "results"
 
 BOOL_VARS = ["people_vs_elite", "economic_resentment", "theft_of_enjoyment"]

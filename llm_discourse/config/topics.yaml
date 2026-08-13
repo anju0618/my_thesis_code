@@ -33,6 +33,33 @@ topics:
       - "技能実習 不法滞在"
     video_ids: ["0iQBN1jgAvU", "gmQM7pweY50", "DkLNScAyAOM"]
 
+  ice_age_precarity:
+    label_ja: "氷河期世代・非正規雇用"
+    search_queries:
+      - "氷河期世代 非正規雇用"
+      - "就職氷河期 貧困"
+      - "非正規雇用 格差 ニュース"
+      - "氷河期世代 見捨てられた"
+    video_ids: []
+
+  income_wall:
+    label_ja: "年収の壁・103万円の壁"
+    search_queries:
+      - "103万円の壁"
+      - "年収の壁 減税"
+      - "103万の壁 国民民主党"
+      - "年収の壁 引き上げ"
+    video_ids: []
+
+  takaichi_admin:
+    label_ja: "高市政権・自民党批判"
+    search_queries:
+      - "高市早苗 政権 批判"
+      - "自民党 支持率 低下"
+      - "高市内閣 ニュース"
+      - "自民党 批判 コメント"
+    video_ids: []
+
 # 収集時のデフォルト設定
 defaults:
   max_videos_per_query: 15       # 検索クエリ1件あたり取得する動画数の上限
