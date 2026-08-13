@@ -1,0 +1,282 @@
+\documentclass[dvipdfmx, a4paper, 11pt]{jsarticle}
+
+% --- 日本語環境用設定 ---
+\usepackage[top=25truemm,bottom=25truemm,left=25truemm,right=25truemm]{geometry}
+
+% --- 追加パッケージ ---
+\usepackage[dvipdfmx]{graphicx} % 画像読み込み用
+\usepackage{booktabs}           % 表の罫線を美しくする
+\usepackage{url}                % URLの表示
+\usepackage{float}              % 図表の位置固定 [H] 用
+\usepackage{amsmath}            % 数式
+
+\graphicspath{{../results/}}
+
+% --- 箇条書き設定（パッケージを使わない方法に変更）---
+\renewcommand{\labelitemi}{--}
+
+% --- タイトル情報 ---
+\title{分析2 小レポート：\\YouTubeコメントのLLM構造化コーディング\\ \large{―進行中の暫定集計（本レポート作成時点の最新集計 $N=7{,}144$）―}}
+\author{明治大学 政治経済学部 杉本ゼミ\\ 牧野 杏珠}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本レポートは，卒業論文第4部・分析2（YouTubeコメントのLLM構造化コーディング）
+の進捗と暫定結果を要約する内部メモである。財務省デモ・参政党・不法移民の
+3トピックについてYouTube日本語コメント計38{,}214件を収集し，トピックごと
+最大6{,}000件（合計18{,}000件）の層化サンプルに対し，ローカルLLM
+（Ollama, qwen2.5:7b-instruct）による6変数の構造化コーディングを実施中
+である。本レポートは，\texttt{src/analyze\_coding.py}が最後に実行され
+集計を確定した時点（コーディング済み7{,}480件，スパム除外後$N=7{,}144$，
+サンプル全体の約41\%）の結果を報告する。\textbf{これは最終結果ではなく，
+コーディング処理はバックグラウンドで継続中である}（本レポート執筆時点の
+生ラベル済み件数は13{,}000件超まで進んでいる）。暫定結果は，
+\texttt{people\_vs\_elite}（人民対エリート）が財務省デモで28.4\%と突出し，
+\texttt{economic\_resentment}（経済的怨恨）はいずれのトピックでも
+2\text{--}4\%と低く，\texttt{theft\_of\_enjoyment}（享楽の盗取）は
+不法移民トピックでのみ7.2\%と突出するという，トピックごとに大きく
+異なるパターンを示している。ただし人手検証（Cohenの$\kappa$）の結果，
+\texttt{economic\_resentment}と\texttt{theft\_of\_enjoyment}の測定信頼性
+はほぼゼロであり，この2変数に基づく結論は暫定的な知見にとどめる必要がある。
+\end{abstract}
+
+\section{分析の目的と位置づけ}
+分析1（\texttt{analysis/survey\_regression/}）は，既存の大規模社会調査
+データを用いてSNS利用と制度への信頼というマクロな量的関係を検証したが，
+SNS利用の効果は統計的に非有意であった。分析2は，この非有意性が「SNSが
+日本の政治と無関係である」ことを意味するのではなく，SNSの影響が制度への
+信頼のような静的な態度指標としては現れにくく，具体的な言説の内容や
+トーンのレベルでこそ観察されるのではないか，という仮説を検証するために
+設計されている。理論編（第1--3部）で導入した「人民対エリート」
+（Mudde \& Rovira Kaltwasser, 2017）・「経済的怨恨」（Ricci, 2020）・
+「享楽の盗取」（Kawamura \& Iwabuchi, 2022）といった概念を，YouTube
+コメント1件単位の変数へ操作化し，構造化コーディングによって検証する。
+
+\section{データ収集}
+収集対象は3トピック：(1) 財務省デモ・財務省解体・減税，(2) 参政党，
+(3) 不法移民・外国人問題。複数の検索クエリによる動画検索と著者による
+手動選定を組み合わせ，計153本の動画から38{,}214件のコメント
+（トップレベル・返信を含む）を収集した（内訳：不法移民16{,}020件，
+財務省デモ15{,}050件，参政党7{,}144件）。収集はYouTube Data API v3を
+用いて2026年8月11--12日に実施した。
+
+\paragraph{収集順序に由来するバイアス}
+コメント取得は投稿時系列（\texttt{order="time"}）ではなく，YouTube API
+独自の「関連性」順（\texttt{order="relevance"}，実質的にはエンゲージメント
+指標に基づくランキング）で行っている。したがってサンプルは各動画で
+\emph{最もエンゲージメントの高い}コメントに事実上限定されており，
+感情的・対立的な言説へ体系的に偏っている可能性が高い。この点は
+\texttt{people\_vs\_elite}等の出現率を「典型的な水準」ではなく
+\emph{上限に近い推定値}として解釈すべき理由になる。
+
+\section{前処理}
+コメントID基準の重複除去，URL除去・空白正規化，クレンジング後5文字未満の
+極端に短いコメントの除外という3段階の前処理を行った。生コメント
+38{,}656件のうち442件（1.1\%）が除外され，38{,}214件が分析対象として
+残った。スパム・話題逸脱コメントの判別は前処理段階では行わず，後述の
+\texttt{is\_spam\_or\_offtopic}変数（LLMコーディング）に委ねている。
+
+\section{構造化コーディングの手法}
+
+\subsection{モデルと変数}
+ローカルLLM（Ollama, qwen2.5:7b-instruct, temperature=0）を用い，
+コメント本文を外部クラウドAPIへ送信しないプライバシー配慮と，
+モデル・パラメータ固定による再現性を優先した。操作化した6変数は
+表\ref{tab:variables}の通りである。
+
+\begin{table}[H]
+\centering
+\caption{コーディングスキーム（\texttt{config/coding\_scheme.yaml}）}
+\label{tab:variables}
+\begin{tabular}{lll}
+\toprule
+変数名 & 型 & 理論的根拠 \\
+\midrule
+\texttt{people\_vs\_elite} & 真偽値 & Mudde \& Rovira Kaltwasser (2017), pp.5--6 \\
+\texttt{economic\_resentment} & 真偽値 & Ricci (2020), pp.viii--ix, p.52 \\
+\texttt{theft\_of\_enjoyment} & 真偽値 & Kawamura \& Iwabuchi (2022) \\
+\texttt{blame\_target} & カテゴリ（7値） & Fujishiro et al. (2020), p.315 \\
+\texttt{emotional\_tone} & カテゴリ（5値） & Bennett \& Livingston (2020) \\
+\texttt{is\_spam\_or\_offtopic} & 真偽値 & 分析対象からの除外フラグ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{標本抽出}
+全38{,}214件ではなく，トピックごと最大6{,}000件（合計18{,}000件）を
+無作為抽出した層化サンプル（乱数シード42，再現可能）を対象にコーディング
+している。全件コーディングは実測処理時間（1件あたり約7--22秒）から
+換算すると136時間超を要するため，計算資源の制約から標本抽出を行っている。
+
+\section{進捗状況（本レポート作成時点）}
+コーディング処理は\texttt{comment\_id}単位で既処理分をスキップして
+再開できる設計であり，計算機を起動できる時間帯にバックグラウンドで
+断続的に実行している。表\ref{tab:progress}に主要な時点での進捗を示す。
+
+\begin{table}[H]
+\centering
+\small
+\caption{コーディング進捗のスナップショット}
+\label{tab:progress}
+\begin{tabular}{p{6.5cm}cc}
+\toprule
+時点 & ラベル済み件数 & 目標(18{,}000件)に対する割合 \\
+\midrule
+中間時点 & 5{,}584件 & 31\% \\
+\textbf{本レポートの集計対象}（最終\texttt{analyze\_coding.py}実行時点） & \textbf{7{,}480件}（スパム除外後7{,}144件） & \textbf{41\%} \\
+本レポート執筆時点の生ラベル件数（未集計） & 13{,}000件超 & 73\%超 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{注意}：以下の第\ref{sec:results}節の結果は，上表の「本レポートの
+集計対象」（$N=7{,}144$）時点のものであり，最新の生ラベル件数を反映した
+ものではない。\texttt{analyze\_coding.py}を最新の
+\texttt{labeled\_comments.jsonl}に対して再実行すれば，出現率・検定結果
+は更新される。中間時点（$N=5{,}584$）と本レポート集計時点（$N=7{,}144$）
+とで出現率の推定値がほぼ一致していることから，全体傾向としてはある程度
+安定していると考えられるが，最終版では全サンプル（または打ち切り時点の
+最終サンプル）で再集計する必要がある。
+
+\section{結果（$N=7{,}144$時点）}
+\label{sec:results}
+
+\subsection{変数の出現率}
+\texttt{is\_spam\_or\_offtopic}に該当するコメントを除いた7{,}144件について，
+Wilsonスコア区間（95\%）とともに算出した出現率を表\ref{tab:prevalence}に
+示す。
+
+\begin{table}[H]
+\centering
+\caption{トピック別の変数出現率（95\%Wilsonスコア区間）}
+\label{tab:prevalence}
+\begin{tabular}{lccc}
+\toprule
+ & 財務省デモ & 参政党 & 不法移民 \\
+\midrule
+\texttt{people\_vs\_elite} & \textbf{28.4\%} [26.4, 30.5] & 9.6\% [8.3, 11.1] & 5.8\% [4.9, 6.8] \\
+\texttt{economic\_resentment} & 4.0\% [3.2, 5.0] & 0.8\% [0.5, 1.4] & 1.7\% [1.2, 2.3] \\
+\texttt{theft\_of\_enjoyment} & 0.6\% [0.4, 1.1] & 0.6\% [0.3, 1.0] & \textbf{7.2\%} [6.2, 8.3] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\texttt{people\_vs\_elite}は財務省デモで突出して高く，反政府的な動員の
+言説的特徴と整合する。\texttt{economic\_resentment}はいずれのトピックでも
+低く（1--4\%），Ricciが想定する経済的怨恨がこのサンプルの範囲では言説
+として顕在化しにくいことを示唆する。\texttt{theft\_of\_enjoyment}は
+不法移民トピックに強く偏在しており，Kawamura \& Iwabuchi (2022)の理論が
+本来想定する民族的トピックの範囲内で明確に観察される。
+
+\subsection{blame\_targetの分布：カイ二乗検定}
+非難の矛先（\texttt{blame\_target}）の分布はトピック間で統計的に極めて
+有意に異なる（$\chi^2(10)=2282.14$，$p<0.000001$，Cramér's $V=0.584$，
+大きな効果量）。標準化残差を見ると，財務省デモは\texttt{elites\_general}
+（残差$+28.4$）に，参政党は\texttt{specific\_party}（残差$+30.3$）に，
+不法移民は\texttt{immigrants}（残差$+28.0$）・\texttt{foreign\_country}
+（残差$+17.0$）に，それぞれ強く偏って集中している（図\ref{fig:heatmap}）。
+これはFujishiro et al. (2020)の「排外主義対リベラル」という単一軸ではなく，
+トピックごとに非難の対象そのものが体系的に異なる，より分節化した構造を
+示唆する。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{coding_blame_target_heatmap_7144.png}
+    \caption{blame\_target×トピックの標準化残差ヒートマップ（$N=7{,}144$）}
+    \label{fig:heatmap}
+\end{figure}
+
+\subsection{文埋め込みクラスタリング（探索的）}
+コーディング済み全件のうち埋め込みが存在する7{,}068件を対象に
+$K$-meansクラスタリングを行った。シルエット係数は$K=2$（0.0516）で最大
+となり，$K=3$以降は単調に低下する（図\ref{fig:cluster}）。2つのクラスタは
+\texttt{people\_vs\_elite}該当率（クラスタ0: 15.8\%対クラスタ1: 9.2\%）
+に沿って分かれるが，トピック構成比はいずれのクラスタでもほぼ同じであり，
+トピックそのものよりもコメントの感情的な強度（攻撃的・非難的か，中立的・
+穏当か）に沿った緩やかな二分を反映していると解釈できる。6変数の
+コーディングスキームでは捉えきれない独立した言説パターンの存在を積極的に
+支持する結果にはなっていない。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{coding_cluster_7144.png}
+    \caption{文埋め込みによる$K$-meansクラスタリング（PCA投影，$K=2$，$N=7{,}068$）}
+    \label{fig:cluster}
+\end{figure}
+
+\section{コーダー内信頼性（人手検証）}
+3トピックから層化抽出した57件について，著者自身がLLMの判定を見ないまま
+独立に6変数を判定し，一致率とCohenの$\kappa$を算出した（二値変数の
+算出は，LLMが\texttt{null}と判定した15件を除く42件を対象）。結果は
+表\ref{tab:kappa}の通りである。
+
+\begin{table}[H]
+\centering
+\caption{コーダー内信頼性}
+\label{tab:kappa}
+\begin{tabular}{lccc}
+\toprule
+変数 & 単純一致率 & $\kappa$ & 備考 \\
+\midrule
+\texttt{people\_vs\_elite} & 92.9\% (39/42) & 0.632 & 実質的な一致 \\
+\texttt{economic\_resentment} & 92.9\% (39/42) & $-0.033$ & 一致は偶然水準以下 \\
+\texttt{theft\_of\_enjoyment} & 92.9\% (39/42) & 0.000 & 一致なし \\
+\texttt{blame\_target}（7値） & 60.5\% (26/43) & 0.468 & 中程度の一致 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{重大な留保}：単純一致率はいずれも92.9\%と高いが，
+\texttt{economic\_resentment}と\texttt{theft\_of\_enjoyment}の$\kappa$は
+ほぼゼロである。これは両変数の出現率が数\%ときわめて低く，偶然一致率
+$p_e$がすでに90\%を超える水準にあるため（「$\kappa$のパラドックス」），
+わずかな不一致でも$\kappa$が大きく押し下げられることが一因だが，統計的な
+不安定性だけでは説明しきれないコーディングスキームの境界事例に関する
+実質的な論点も含まれている。したがって，本レポートが報告する
+\texttt{economic\_resentment}・\texttt{theft\_of\_enjoyment}の出現率に
+基づく結論は，測定の信頼性が実証されていない変数に基づく\emph{暫定的な
+知見}として扱う必要がある。他方，\texttt{people\_vs\_elite}
+（$\kappa=0.632$）は相対的に頑健な測定に基づいている。
+
+\section{現時点での限界}
+\begin{itemize}
+  \item \textbf{打ち切り時点の暫定性}：本レポートの集計は目標18{,}000件
+    中41\%（$N=7{,}144$）時点のものであり，コーディングは継続中である。
+    最終版では全サンプル（または執筆スケジュール上打ち切った時点の
+    最終サンプル）で再集計する必要がある。
+  \item \textbf{測定信頼性}：上記の通り，\texttt{economic\_resentment}・
+    \texttt{theft\_of\_enjoyment}の$\kappa$がほぼゼロであり，これらに
+    基づく結論は暫定的である。
+  \item \textbf{収集順序バイアス}：\texttt{order="relevance"}による収集
+    のため，サンプルはエンゲージメント上位に偏っており，感情的・対立的な
+    言説の出現率を過大に見積もっている可能性が高い。
+  \item \textbf{分析単位の限定性}：本レポートの結果はコメント単位の
+    集計であり，「日本にポピュリズムは存在するか」論争（Fahey, Hino \&
+    Pekkanen対Hellmann）が要求するような，特定の政治的アクター単位の
+    マクロな判定には直接接続しない。
+  \item \textbf{欠測パターン}：3変数（\texttt{people\_vs\_elite}等）は
+    約15.5\%が\texttt{null}であり，このうち74.3\%が\texttt{neutral\_
+    factual}に分類されている——欠測は完全にランダムではなく，
+    complete-case analysisによる出現率推定には方向が不明な偏りが残る
+    可能性がある。
+\end{itemize}
+
+\section{今後の作業}
+\begin{enumerate}
+  \item バックグラウンドでのコーディング処理を継続し，執筆スケジュールが
+    許す範囲でサンプルサイズを拡大する。
+  \item 最終的にコーディングを打ち切った時点で\texttt{analyze\_coding.py}
+    を再実行し，本レポートの表・図をすべて最終値に更新する。
+  \item \texttt{embed.py}を最新の\texttt{comments\_sample.csv}
+    （18{,}000件）に対して再実行し，埋め込みクラスタリングを全サンプルで
+    やり直す。
+  \item 事前規定した反証基準（\texttt{sections/04\_empirical.tex}
+    「Ricci理論の検証基準」）を最終数値に適用し，卒論本文の該当節を
+    更新する。
+\end{enumerate}
+
+\end{document}
