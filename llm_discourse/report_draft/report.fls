@@ -107,10 +107,10 @@ INPUT c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
 INPUT c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm
 INPUT c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT c:/texlive/2026/texmf-dist/fonts/tfm/public/cm/cmex10.tfm
-INPUT ../results/coding_blame_target_heatmap_7144.png
-INPUT ../results/coding_blame_target_heatmap_7144.png
-INPUT extractbb -B cropbox -O ../results/coding_blame_target_heatmap_7144.png
-INPUT ../results/coding_cluster_7144.png
-INPUT ../results/coding_cluster_7144.png
-INPUT extractbb -B cropbox -O ../results/coding_cluster_7144.png
+INPUT ../results/coding_blame_target_heatmap_14501.png
+INPUT ../results/coding_blame_target_heatmap_14501.png
+INPUT extractbb -B cropbox -O ../results/coding_blame_target_heatmap_14501.png
+INPUT ../results/coding_cluster_14501.png
+INPUT ../results/coding_cluster_14501.png
+INPUT extractbb -B cropbox -O ../results/coding_cluster_14501.png
 INPUT report.aux
