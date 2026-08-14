@@ -1,0 +1,81 @@
+構造化コーディング結果の暫定集計（実行時点でのラベリング済み件数: 14501件）
+※ コーディング処理は本稿執筆時点で継続中であり，これは最終結果ではない。
+
+======================================================================
+1. 各トピックにおける変数の出現率（Wilsonスコア区間，95%）
+======================================================================
+
+--- immigration (不法移民), N=5076 ---
+  people_vs_elite       :  244/4372 =   5.6%  [  4.9%,   6.3%]  (欠測 704件)
+  economic_resentment   :   63/4372 =   1.4%  [  1.1%,   1.8%]  (欠測 704件)
+  theft_of_enjoyment    :  298/4375 =   6.8%  [  6.1%,   7.6%]  (欠測 701件)
+
+--- sanseito (参政党), N=4723 ---
+  people_vs_elite       :  413/3873 =  10.7%  [  9.7%,  11.7%]  (欠測 850件)
+  economic_resentment   :   34/3873 =   0.9%  [  0.6%,   1.2%]  (欠測 850件)
+  theft_of_enjoyment    :   30/3873 =   0.8%  [  0.5%,   1.1%]  (欠測 850件)
+
+--- zaimusho_demo (財務省デモ), N=4702 ---
+  people_vs_elite       : 1130/4025 =  28.1%  [ 26.7%,  29.5%]  (欠測 677件)
+  economic_resentment   :  146/4025 =   3.6%  [  3.1%,   4.3%]  (欠測 677件)
+  theft_of_enjoyment    :   32/4025 =   0.8%  [  0.6%,   1.1%]  (欠測 677件)
+
+======================================================================
+2. blame_targetの分布：トピック間のカイ二乗検定
+======================================================================
+
+分割表（度数）:
+blame_target   elites_general  foreign_country  government  immigrants  media  specific_party
+topic                                                                                        
+immigration               260              558         353         979    184             228
+sanseito                  241               78         444          39     61            1172
+zaimusho_demo            1245               55         444          32    222             202
+
+カイ二乗統計量: 4688.83, 自由度: 10, p値: 0.000000
+Cramér's V: 0.5873
+
+標準化残差（|値|が大きいほど期待値からの乖離が大きい）:
+blame_target   elites_general  foreign_country  government  immigrants  media  specific_party
+topic                                                                                        
+immigration            -22.81            24.64       -7.44       40.39   0.79          -22.16
+sanseito               -17.08           -11.29        4.97      -20.18  -8.25           43.20
+zaimusho_demo           40.34           -14.47        2.84      -22.08   7.26          -19.33
+
+書き出し: C:\Users\joker\Documents\my_thesis\analysis\llm_discourse\results\coding_blame_target_heatmap_14501.png
+
+======================================================================
+3. 文埋め込みによる探索的クラスタリング
+======================================================================
+ラベリング済み14501件のうち，埋め込みが存在する13961件をクラスタリング対象とする（埋め込みはsample_embeddings.npy作成時点の6,000件サンプルに基づくため，その後拡大したサンプルの全件はカバーしない。最終版ではembed.pyを最新のcomments_sample.csvに対して再実行すること）。
+  K=2: silhouette=0.0528
+  K=3: silhouette=0.0414
+  K=4: silhouette=0.0440
+  K=5: silhouette=0.0366
+  K=6: silhouette=0.0329
+  K=7: silhouette=0.0287
+シルエット係数最大のK: 2
+
+クラスタ×トピックの分布 (K=2):
+topic    immigration  sanseito  zaimusho_demo
+cluster                                      
+0               2845      2873           2738
+1               1762      1820           1923
+
+クラスタ×主要変数の該当率:
+  people_vs_elite: {0: 0.173, 1: 0.09}
+  economic_resentment: {0: 0.024, 1: 0.009}
+  theft_of_enjoyment: {0: 0.033, 1: 0.014}
+
+各クラスタの代表コメント（重心に最も近い3件，rationale_ja付き）:
+
+  クラスタ0 (N=8456):
+    topic=sanseito, blame_target=specific_party, tone=contempt: 特定の政党を非難しており、国民がその政党に騙されていると批判している。
+    topic=sanseito, blame_target=government, tone=anger: 一般日本人と政治家との二項対立が明確に示されており、怒りの感情が表現されています。
+    topic=sanseito, blame_target=specific_party, tone=neutral_factual: 特定の政党への支持表明であり、経済的不満や被害感覚は含まれていない。
+
+  クラスタ1 (N=5505):
+    topic=zaimusho_demo, blame_target=nan, tone=neutral_factual: 感謝の言葉で、特定の対立構造や感情表現が見られません。
+    topic=zaimusho_demo, blame_target=nan, tone=neutral_factual: 感謝の言葉で、特定の対立構造や感情表現が見られません。
+    topic=zaimusho_demo, blame_target=nan, tone=neutral_factual: 感謝の言葉で、特定の対立構造や感情表現が見られません。
+
+書き出し: C:\Users\joker\Documents\my_thesis\analysis\llm_discourse\results\coding_cluster_14501.png
