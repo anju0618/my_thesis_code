@@ -1,29 +1,28 @@
 """
-構造化コーディング結果（labeled_comments.jsonl）の集計・検定・探索的分析。
+構造化コーディング結果（labeled_comments.jsonl）の集計・検定・探索的分析
+——全8トピック版。
 
-sections/04_empirical.tex の「分析の進め方」節（subsec:formalization）で
-予告した4種類の分析のうち，人手検証（Cohenのkappa）を除く3種類を実施する：
-  1. 各トピックにおける people_vs_elite / economic_resentment /
-     theft_of_enjoyment の出現率と，Wilsonスコア信頼区間
-     （sections/90_appendix_math.tex の定式化に対応，中心を再補正した
-     正しい版を実装する）。
-  2. blame_target の分布がトピック間で異なるかのカイ二乗検定・Cramér's V・
-     標準化残差（Fujishiro et al. 2020のベンチマーク検証）。
-  3. 文埋め込み（embed.py で作成済み）を用いた K-means 探索的クラスタリング
-     （シルエット係数で K を選定，issp_ml_analysis.py と同じ方針）。
+analyze_coding.py（財務省デモ・参政党・不法移民の3トピック，卒論本文
+sections/04_empirical.tex が既に参照している確定版）に，2026年8月に追加で
+LLMコーディングした5トピック（氷河期世代・年収の壁・高市政権・大阪維新の会・
+れいわ新選組）を加えた全8トピック（計約48,000件）で同じ3種類の分析を
+やり直したもの。既存の3トピック版の結果・卒論本文の記述には一切影響しない
+（analyze_coding.pyは変更していない）。
 
-このスクリプトは labeled_comments.jsonl が完成していない時点でも実行できる
-（コーディング中のサブセットに対する暫定集計として使う）。実行のたびに
-現時点のコーディング件数を明記した出力を残すため，最終版とは別に日付入りの
-ファイル名で結果を保存する。
+新たに追加した2トピック（大阪維新の会・れいわ新選組）は，Mudde &
+Rovira Kaltwasser (2017) の「ポピュリズムは左右どちらにも付着しうる薄い
+イデオロギー」というテーゼを検証するため，右派ポピュリズム的言説とされる
+参政党と，左派ポピュリズム的言説とされるれいわ新選組を対比する目的で
+追加したもの。氷河期世代・年収の壁は，Ricciの言う「経済的破壊の当事者」
+そのものが語り手となる言説を捉える目的で追加した。
 
 使い方:
-    uv run src/analyze_coding.py
+    uv run src/analyze_coding_full.py
 
 出力:
-    results/coding_summary_{件数}.txt   -- 出現率・カイ二乗検定・クラスタ分析の要約
-    results/coding_blame_target_heatmap_{件数}.png -- トピック×非難対象の残差ヒートマップ
-    results/coding_cluster_{件数}.png   -- 埋め込みクラスタのUMAP風2次元散布図（PCA使用）
+    results/coding_full_summary_{件数}.txt
+    results/coding_full_blame_target_heatmap_{件数}.png
+    results/coding_full_cluster_{件数}.png
 """
 
 from __future__ import annotations
@@ -47,10 +46,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ANALYSIS_ROOT = Path(__file__).resolve().parent.parent
 LABELED_PATH = ANALYSIS_ROOT / "data" / "processed" / "labeled_comments.jsonl"
-SAMPLE_PATH = ANALYSIS_ROOT / "data" / "processed" / "comments_sample.csv"
-# final_embeddings.npy/csv はコーディング済み全件（comments_labeled_subset.csv）に
-# 対して embed.py --device cpu を再実行して作成したもので，旧sample_embeddings.npy
-# （初期6,000件サンプルのみ）より広い範囲をカバーする。
+SAMPLE_PATH = ANALYSIS_ROOT / "data" / "processed" / "comments_sample_all8.csv"
 EMBEDDINGS_PATH = ANALYSIS_ROOT / "data" / "processed" / "final_embeddings.npy"
 EMBEDDINGS_IDS_PATH = ANALYSIS_ROOT / "data" / "processed" / "final_embeddings_ids.csv"
 RESULTS_DIR = ANALYSIS_ROOT / "results"
@@ -60,6 +56,11 @@ TOPIC_LABELS_JA = {
     "zaimusho_demo": "財務省デモ",
     "sanseito": "参政党",
     "immigration": "不法移民",
+    "ice_age_precarity": "氷河期世代",
+    "income_wall": "年収の壁",
+    "takaichi_admin": "高市政権",
+    "ishin_osaka": "大阪維新の会",
+    "reiwa_shinsengumi": "れいわ新選組",
 }
 
 
@@ -77,37 +78,21 @@ def load_labeled() -> pd.DataFrame:
     print(f"読み込み: {len(df) + n_parse_error}件中 parse_error {n_parse_error}件を除外，"
           f"{len(df)}件を分析対象とする")
 
-    # comments_sample.csv（seed=42, 各トピック6,000件, 計18,000件で固定した
-    # 最終版の層化サンプル）に含まれる comment_id のみへ絞り込む。サンプル
-    # サイズを2,000件/トピック→6,000件/トピックへ拡大した際，
-    # pandas.DataFrame.sample(n=..., random_state=42) はnを変えると同じ
-    # seedでも抽出される行集合が変わるため，拡大前の抽出でラベリング済み
-    # だった一部コメント（2026-08-15時点で不法移民トピック466件）が，
-    # 最終サンプルには含まれないにもかかわらず labeled_comments.jsonl には
-    # 残ったままになっている。これらは分析対象から除外する。
     n_before_sample_filter = len(df)
     sample_ids = set(pd.read_csv(SAMPLE_PATH)["comment_id"])
     df = df[df["comment_id"].isin(sample_ids)]
     n_excluded = n_before_sample_filter - len(df)
     if n_excluded:
-        print(f"最終サンプル（comments_sample.csv, N={len(sample_ids)}）に含まれない"
+        print(f"最終サンプル（comments_sample_all8.csv, N={len(sample_ids)}）に含まれない"
               f"{n_excluded}件を除外，{len(df)}件が残る")
 
-    # is_spam_or_offtopic=True のコメントは除外（コーディングスキーム通り）
     n_before = len(df)
     df = df[df["is_spam_or_offtopic"] != True]  # noqa: E712
     print(f"is_spam_or_offtopic除外: {n_before - len(df)}件除外，{len(df)}件が残る")
 
-    # blame_target の表記ゆれ・複合値を正規化する。
-    # コーディングスキーム（config/coding_scheme.yaml）が定める7分類
-    # （media/government/specific_party/foreign_country/immigrants/
-    # elites_general/none）以外の値がLLM出力に稀に混入する
-    # （例："foreigners"という表記ゆれ，"immigrants|elites_general"の
-    # ようなパイプ区切りの複合値）。前者は正規のカテゴリ名に補正し，
-    # 後者は最初の要素を採用する（件数はごく少数，2026-08-12時点で
-    # 全5,849件中18件＝0.3%）。
     if "blame_target" in df.columns:
         n_normalized = 0
+
         def _normalize_bt(v):
             nonlocal n_normalized
             if not isinstance(v, str):
@@ -119,6 +104,7 @@ def load_labeled() -> pd.DataFrame:
                 n_normalized += 1
                 return v.split("|")[0]
             return v
+
         df["blame_target"] = df["blame_target"].apply(_normalize_bt)
         if n_normalized:
             print(f"blame_targetの表記ゆれ・複合値を正規化: {n_normalized}件")
@@ -126,11 +112,6 @@ def load_labeled() -> pd.DataFrame:
 
 
 def wilson_score_interval(k: int, n: int, z: float = 1.96) -> tuple[float, float, float]:
-    """正しいWilsonスコア区間（sections/90_appendix_math.texの修正版に対応）。
-
-    中心を p_hat ではなく p_tilde = (p_hat + z^2/2n) / (1 + z^2/n) に補正し，
-    マージン項 [z/(1+z^2/n)] * sqrt(p_hat(1-p_hat)/n + z^2/4n^2) を1回だけ加減する。
-    """
     if n == 0:
         return (float("nan"), float("nan"), float("nan"))
     p_hat = k / n
@@ -142,7 +123,9 @@ def wilson_score_interval(k: int, n: int, z: float = 1.96) -> tuple[float, float
 
 def occurrence_rates(df: pd.DataFrame, out_lines: list[str]) -> None:
     out_lines.append(f"\n{'=' * 70}\n1. 各トピックにおける変数の出現率（Wilsonスコア区間，95%）\n{'=' * 70}")
-    for topic in df["topic"].unique():
+    for topic in TOPIC_LABELS_JA:
+        if topic not in df["topic"].unique():
+            continue
         sub = df[df["topic"] == topic]
         out_lines.append(f"\n--- {topic} ({TOPIC_LABELS_JA.get(topic, topic)}), N={len(sub)} ---")
         for var in BOOL_VARS:
@@ -152,13 +135,37 @@ def occurrence_rates(df: pd.DataFrame, out_lines: list[str]) -> None:
             p_hat, lo, hi = wilson_score_interval(k, n)
             n_null = len(sub) - n
             out_lines.append(
-                f"  {var:22s}: {k:4d}/{n:4d} = {p_hat*100:5.1f}%  "
-                f"[{lo*100:5.1f}%, {hi*100:5.1f}%]  (欠測 {n_null}件)"
+                f"  {var:22s}: {k:4d}/{n:4d} = {p_hat * 100:5.1f}%  "
+                f"[{lo * 100:5.1f}%, {hi * 100:5.1f}%]  (欠測 {n_null}件)"
             )
+
+    out_lines.append(f"\n{'=' * 70}\n1b. 左右ポピュリズム対比: 参政党（右派） vs れいわ新選組（左派）\n{'=' * 70}")
+    out_lines.append(
+        "Mudde & Rovira Kaltwasser (2017) の「ポピュリズムは薄いイデオロギーで左右どちらにも"
+        "付着しうる」というテーゼが正しければ，people_vs_elite（人民対エリート図式）の出現率は"
+        "両党で同水準に近いはずである。"
+    )
+    for var in BOOL_VARS:
+        r = df[df["topic"] == "sanseito"][var].dropna()
+        l = df[df["topic"] == "reiwa_shinsengumi"][var].dropna()
+        if len(r) == 0 or len(l) == 0:
+            continue
+        ct = pd.DataFrame({
+            "count": [int(r.sum()), int(l.sum())],
+            "n": [len(r), len(l)],
+        }, index=["sanseito", "reiwa_shinsengumi"])
+        contingency = np.array([[ct.loc["sanseito", "count"], ct.loc["sanseito", "n"] - ct.loc["sanseito", "count"]],
+                                 [ct.loc["reiwa_shinsengumi", "count"], ct.loc["reiwa_shinsengumi", "n"] - ct.loc["reiwa_shinsengumi", "count"]]])
+        chi2, p, _, _ = stats.chi2_contingency(contingency)
+        out_lines.append(
+            f"  {var:22s}: 参政党={ct.loc['sanseito', 'count'] / ct.loc['sanseito', 'n'] * 100:5.1f}%  "
+            f"れいわ={ct.loc['reiwa_shinsengumi', 'count'] / ct.loc['reiwa_shinsengumi', 'n'] * 100:5.1f}%  "
+            f"カイ二乗 chi2={chi2:.2f} p={p:.6f}{'  *有意差あり*' if p < 0.05 else '  有意差なし（同水準）'}"
+        )
 
 
 def chi_square_blame_target(df: pd.DataFrame, out_lines: list[str]) -> None:
-    out_lines.append(f"\n{'=' * 70}\n2. blame_targetの分布：トピック間のカイ二乗検定\n{'=' * 70}")
+    out_lines.append(f"\n{'=' * 70}\n2. blame_targetの分布：トピック間のカイ二乗検定（全8トピック）\n{'=' * 70}")
     sub = df.dropna(subset=["blame_target"])
     sub = sub[sub["blame_target"] != "none"]
     ct = pd.crosstab(sub["topic"], sub["blame_target"])
@@ -171,7 +178,6 @@ def chi_square_blame_target(df: pd.DataFrame, out_lines: list[str]) -> None:
     out_lines.append(f"\nカイ二乗統計量: {chi2:.2f}, 自由度: {dof}, p値: {p:.6f}")
     out_lines.append(f"Cramér's V: {cramers_v:.4f}")
 
-    # 標準化残差
     expected_df = pd.DataFrame(expected, index=ct.index, columns=ct.columns)
     row_totals = ct.sum(axis=1)
     col_totals = ct.sum(axis=0)
@@ -183,7 +189,7 @@ def chi_square_blame_target(df: pd.DataFrame, out_lines: list[str]) -> None:
     out_lines.append("\n標準化残差（|値|が大きいほど期待値からの乖離が大きい）:")
     out_lines.append(resid.round(2).to_string())
 
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(11, 6))
     im = ax.imshow(resid.values, cmap="RdBu_r", vmin=-4, vmax=4, aspect="auto")
     ax.set_xticks(range(len(resid.columns)))
     ax.set_xticklabels(resid.columns, rotation=45, ha="right")
@@ -191,11 +197,11 @@ def chi_square_blame_target(df: pd.DataFrame, out_lines: list[str]) -> None:
     ax.set_yticklabels([TOPIC_LABELS_JA.get(t, t) for t in resid.index])
     for i in range(resid.shape[0]):
         for j in range(resid.shape[1]):
-            ax.text(j, i, f"{resid.values[i, j]:.1f}", ha="center", va="center", fontsize=8)
+            ax.text(j, i, f"{resid.values[i, j]:.1f}", ha="center", va="center", fontsize=7)
     fig.colorbar(im, label="標準化残差")
-    ax.set_title(f"非難の矛先(blame_target)×トピック 標準化残差 (N={n})")
+    ax.set_title(f"非難の矛先(blame_target)×トピック 標準化残差（全8トピック, N={n}）")
     fig.tight_layout()
-    out_path = RESULTS_DIR / f"coding_blame_target_heatmap_{len(df)}.png"
+    out_path = RESULTS_DIR / f"coding_full_blame_target_heatmap_{len(df)}.png"
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     out_lines.append(f"\n書き出し: {out_path}")
@@ -206,7 +212,7 @@ def embedding_cluster(df: pd.DataFrame, out_lines: list[str]) -> None:
     from sklearn.decomposition import PCA
     from sklearn.metrics import silhouette_score
 
-    out_lines.append(f"\n{'=' * 70}\n3. 文埋め込みによる探索的クラスタリング\n{'=' * 70}")
+    out_lines.append(f"\n{'=' * 70}\n3. 文埋め込みによる探索的クラスタリング（全8トピック）\n{'=' * 70}")
 
     if not EMBEDDINGS_PATH.exists():
         out_lines.append("embeddings.npyが見つからないためスキップ（先にembed.pyを実行すること）")
@@ -219,8 +225,7 @@ def embedding_cluster(df: pd.DataFrame, out_lines: list[str]) -> None:
     merged = df.merge(ids[["comment_id", "emb_idx"]], on="comment_id", how="inner")
     coverage_note = (
         "（カバー率100%）" if len(merged) == len(df)
-        else f"（埋め込みが{len(df) - len(merged)}件不足。embed.pyを最新の"
-             f"comments_sample.csvに対して再実行すること）"
+        else f"（埋め込みが{len(df) - len(merged)}件不足）"
     )
     out_lines.append(
         f"ラベリング済み{len(df)}件のうち，埋め込みが存在する{len(merged)}件を"
@@ -232,12 +237,12 @@ def embedding_cluster(df: pd.DataFrame, out_lines: list[str]) -> None:
 
     X = embeddings[merged["emb_idx"].values]
 
-    k_range = range(2, 8)
+    k_range = range(2, 12)
     sils = []
     for k in k_range:
         km = KMeans(n_clusters=k, random_state=0, n_init=10)
         labels = km.fit_predict(X)
-        sil = silhouette_score(X, labels, sample_size=min(2000, len(X)), random_state=0)
+        sil = silhouette_score(X, labels, sample_size=min(3000, len(X)), random_state=0)
         sils.append(sil)
         out_lines.append(f"  K={k}: silhouette={sil:.4f}")
     best_k = list(k_range)[int(np.argmax(sils))]
@@ -247,43 +252,24 @@ def embedding_cluster(df: pd.DataFrame, out_lines: list[str]) -> None:
     merged["cluster"] = km.fit_predict(X)
 
     out_lines.append(f"\nクラスタ×トピックの分布 (K={best_k}):")
-    out_lines.append(pd.crosstab(merged["cluster"], merged["topic"]).to_string())
+    out_lines.append(pd.crosstab(merged["cluster"], merged["topic"]).rename(columns=TOPIC_LABELS_JA).to_string())
 
-    out_lines.append(f"\nクラスタ×主要変数の該当率:")
-    for var in [*BOOL_VARS]:
+    out_lines.append("\nクラスタ×主要変数の該当率:")
+    for var in BOOL_VARS:
         rates = merged.groupby("cluster")[var].mean().round(3)
         out_lines.append(f"  {var}: {rates.to_dict()}")
 
-    # 代表コメント（各クラスタの重心に最も近い3件）をrationale_jaと共に記録
-    out_lines.append("\n各クラスタの代表コメント（重心に最も近い3件，rationale_ja付き）:")
-    for c in range(best_k):
-        mask = merged["cluster"] == c
-        idx_in_cluster = np.where(mask.values)[0]
-        Xc = X[idx_in_cluster]
-        centroid = Xc.mean(axis=0)
-        dists = np.linalg.norm(Xc - centroid, axis=1)
-        top3 = idx_in_cluster[np.argsort(dists)[:3]]
-        out_lines.append(f"\n  クラスタ{c} (N={mask.sum()}):")
-        for i in top3:
-            row = merged.iloc[i]
-            text_preview = str(row.get("rationale_ja", ""))[:80]
-            out_lines.append(
-                f"    topic={row['topic']}, blame_target={row.get('blame_target')}, "
-                f"tone={row.get('emotional_tone')}: {text_preview}"
-            )
-
-    # PCA 2次元プロット
     pca = PCA(n_components=2, random_state=0)
     coords = pca.fit_transform(X)
-    fig, ax = plt.subplots(figsize=(7, 6))
-    scatter = ax.scatter(coords[:, 0], coords[:, 1], c=merged["cluster"], cmap="tab10", s=8, alpha=0.6)
-    ax.set_title(f"文埋め込みクラスタ（PCA 2次元投影, K={best_k}, N={len(merged)}）")
+    fig, ax = plt.subplots(figsize=(8, 7))
+    scatter = ax.scatter(coords[:, 0], coords[:, 1], c=merged["cluster"], cmap="tab10", s=6, alpha=0.5)
+    ax.set_title(f"文埋め込みクラスタ（PCA 2次元投影, K={best_k}, N={len(merged)}, 全8トピック）")
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     legend1 = ax.legend(*scatter.legend_elements(), title="クラスタ", loc="upper right", fontsize=8)
     ax.add_artist(legend1)
     fig.tight_layout()
-    out_path = RESULTS_DIR / f"coding_cluster_{len(df)}.png"
+    out_path = RESULTS_DIR / f"coding_full_cluster_{len(df)}.png"
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     out_lines.append(f"\n書き出し: {out_path}")
@@ -295,15 +281,15 @@ def main() -> None:
 
     n_sample_total = len(pd.read_csv(SAMPLE_PATH))
     out_lines: list[str] = [
-        f"構造化コーディング結果の集計（is_spam_or_offtopic除外後の分析対象: {len(df)}件，"
-        f"目標サンプル{n_sample_total}件中）",
+        f"構造化コーディング結果の集計（全8トピック版, is_spam_or_offtopic除外後の分析対象: "
+        f"{len(df)}件，目標サンプル{n_sample_total}件中）",
     ]
 
     occurrence_rates(df, out_lines)
     chi_square_blame_target(df, out_lines)
     embedding_cluster(df, out_lines)
 
-    summary_path = RESULTS_DIR / f"coding_summary_{len(df)}.txt"
+    summary_path = RESULTS_DIR / f"coding_full_summary_{len(df)}.txt"
     summary_path.write_text("\n".join(out_lines), encoding="utf-8")
     print(f"\n書き出し: {summary_path}")
 

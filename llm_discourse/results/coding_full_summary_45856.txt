@@ -1,0 +1,115 @@
+構造化コーディング結果の集計（全8トピック版, is_spam_or_offtopic除外後の分析対象: 45856件，目標サンプル48000件中）
+
+======================================================================
+1. 各トピックにおける変数の出現率（Wilsonスコア区間，95%）
+======================================================================
+
+--- zaimusho_demo (財務省デモ), N=5731 ---
+  people_vs_elite       : 1390/4911 =  28.3%  [ 27.1%,  29.6%]  (欠測 820件)
+  economic_resentment   :  190/4911 =   3.9%  [  3.4%,   4.4%]  (欠測 820件)
+  theft_of_enjoyment    :   39/4910 =   0.8%  [  0.6%,   1.1%]  (欠測 821件)
+
+--- sanseito (参政党), N=5754 ---
+  people_vs_elite       :  492/4719 =  10.4%  [  9.6%,  11.3%]  (欠測 1035件)
+  economic_resentment   :   42/4719 =   0.9%  [  0.7%,   1.2%]  (欠測 1035件)
+  theft_of_enjoyment    :   37/4719 =   0.8%  [  0.6%,   1.1%]  (欠測 1035件)
+
+--- immigration (不法移民), N=5691 ---
+  people_vs_elite       :  269/4906 =   5.5%  [  4.9%,   6.2%]  (欠測 785件)
+  economic_resentment   :   57/4906 =   1.2%  [  0.9%,   1.5%]  (欠測 785件)
+  theft_of_enjoyment    :  335/4910 =   6.8%  [  6.2%,   7.6%]  (欠測 781件)
+
+--- ice_age_precarity (氷河期世代), N=5837 ---
+  people_vs_elite       :  548/5416 =  10.1%  [  9.3%,  10.9%]  (欠測 421件)
+  economic_resentment   :  315/5420 =   5.8%  [  5.2%,   6.5%]  (欠測 417件)
+  theft_of_enjoyment    :   21/5420 =   0.4%  [  0.3%,   0.6%]  (欠測 417件)
+
+--- income_wall (年収の壁), N=5795 ---
+  people_vs_elite       :  448/5068 =   8.8%  [  8.1%,   9.7%]  (欠測 727件)
+  economic_resentment   :  272/5070 =   5.4%  [  4.8%,   6.0%]  (欠測 725件)
+  theft_of_enjoyment    :   18/5069 =   0.4%  [  0.2%,   0.6%]  (欠測 726件)
+
+--- takaichi_admin (高市政権), N=5704 ---
+  people_vs_elite       :  574/4852 =  11.8%  [ 11.0%,  12.8%]  (欠測 852件)
+  economic_resentment   :  139/4853 =   2.9%  [  2.4%,   3.4%]  (欠測 851件)
+  theft_of_enjoyment    :   14/4853 =   0.3%  [  0.2%,   0.5%]  (欠測 851件)
+
+--- ishin_osaka (大阪維新の会), N=5710 ---
+  people_vs_elite       :  349/4813 =   7.3%  [  6.6%,   8.0%]  (欠測 897件)
+  economic_resentment   :   40/4813 =   0.8%  [  0.6%,   1.1%]  (欠測 897件)
+  theft_of_enjoyment    :   27/4813 =   0.6%  [  0.4%,   0.8%]  (欠測 897件)
+
+--- reiwa_shinsengumi (れいわ新選組), N=5634 ---
+  people_vs_elite       :  509/4746 =  10.7%  [  9.9%,  11.6%]  (欠測 888件)
+  economic_resentment   :   97/4746 =   2.0%  [  1.7%,   2.5%]  (欠測 888件)
+  theft_of_enjoyment    :    4/4745 =   0.1%  [  0.0%,   0.2%]  (欠測 889件)
+
+======================================================================
+1b. 左右ポピュリズム対比: 参政党（右派） vs れいわ新選組（左派）
+======================================================================
+Mudde & Rovira Kaltwasser (2017) の「ポピュリズムは薄いイデオロギーで左右どちらにも付着しうる」というテーゼが正しければ，people_vs_elite（人民対エリート図式）の出現率は両党で同水準に近いはずである。
+  people_vs_elite       : 参政党= 10.4%  れいわ= 10.7%  カイ二乗 chi2=0.19 p=0.660414  有意差なし（同水準）
+  economic_resentment   : 参政党=  0.9%  れいわ=  2.0%  カイ二乗 chi2=20.98 p=0.000005  *有意差あり*
+  theft_of_enjoyment    : 参政党=  0.8%  れいわ=  0.1%  カイ二乗 chi2=25.26 p=0.000001  *有意差あり*
+
+======================================================================
+2. blame_targetの分布：トピック間のカイ二乗検定（全8トピック）
+======================================================================
+
+分割表（度数）:
+blame_target       elites_general  feminism  foreign_country  government  immigrants  media  reirewa_antis  specific_company  specific_party  specific_person
+topic                                                                                                                                                        
+ice_age_precarity             543         0               48         456          44     30              0                 1             121                0
+immigration                   284         0              629         403        1078    226              0                 0             238                0
+income_wall                   433         0               20         453          26    249              0                 0             299                0
+ishin_osaka                   271         0              123         677          12    212              0                 0             756                0
+reiwa_shinsengumi             426         0               80         632          18     79              1                 0             933                0
+sanseito                      288         0              100         537          52     75              0                 0            1416                0
+takaichi_admin                475         1               70         888          39    331              0                 0             645                3
+zaimusho_demo                1531         0               68         529          40    260              0                 0             235                0
+
+カイ二乗統計量: 10267.76, 自由度: 63, p値: 0.000000
+Cramér's V: 0.2905
+
+標準化残差（|値|が大きいほど期待値からの乖離が大きい）:
+blame_target       elites_general  feminism  foreign_country  government  immigrants  media  reirewa_antis  specific_company  specific_party  specific_person
+topic                                                                                                                                                        
+ice_age_precarity           16.37     -0.28            -3.97        8.61       -5.53  -7.91          -0.28              3.60          -14.04            -0.48
+immigration                -19.75     -0.44            36.56      -16.22       66.91  -1.06          -0.44             -0.44          -24.30            -0.77
+income_wall                  4.49     -0.31            -8.45        3.92       -8.80  12.19          -0.31             -0.31           -5.91            -0.53
+ishin_osaka                -12.61     -0.37            -1.07        7.33      -12.69   3.35          -0.37             -0.37           11.06            -0.63
+reiwa_shinsengumi           -5.57     -0.38            -5.75        3.19      -12.64  -8.55           2.65             -0.38           18.35            -0.65
+sanseito                   -15.95     -0.41            -5.41       -5.55      -11.02 -10.38          -0.41             -0.41           37.17            -0.70
+takaichi_admin              -6.32      2.47            -7.97       12.01      -12.03   9.80          -0.41             -0.41           -0.49             4.27
+zaimusho_demo               43.11     -0.43            -9.05       -8.22      -12.81   2.73          -0.43             -0.43          -22.67            -0.74
+
+書き出し: C:\Users\joker\Documents\my_thesis\analysis\llm_discourse\results\coding_full_blame_target_heatmap_45856.png
+
+======================================================================
+3. 文埋め込みによる探索的クラスタリング（全8トピック）
+======================================================================
+ラベリング済み45856件のうち，埋め込みが存在する45856件をクラスタリング対象とする（カバー率100%）。
+  K=2: silhouette=0.0449
+  K=3: silhouette=0.0395
+  K=4: silhouette=0.0274
+  K=5: silhouette=0.0302
+  K=6: silhouette=0.0230
+  K=7: silhouette=0.0204
+  K=8: silhouette=0.0202
+  K=9: silhouette=0.0208
+  K=10: silhouette=0.0202
+  K=11: silhouette=0.0174
+シルエット係数最大のK: 2
+
+クラスタ×トピックの分布 (K=2):
+topic    氷河期世代  不法移民  年収の壁  大阪維新の会  れいわ新選組   参政党  高市政権  財務省デモ
+cluster                                                      
+0         4166  3393  3643    3401    3010  3488  3429   3303
+1         1671  2298  2152    2309    2624  2266  2275   2428
+
+クラスタ×主要変数の該当率:
+  people_vs_elite: {0: 0.138, 1: 0.065}
+  economic_resentment: {0: 0.038, 1: 0.01}
+  theft_of_enjoyment: {0: 0.015, 1: 0.007}
+
+書き出し: C:\Users\joker\Documents\my_thesis\analysis\llm_discourse\results\coding_full_cluster_45856.png

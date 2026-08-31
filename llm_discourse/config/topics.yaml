@@ -60,6 +60,24 @@ topics:
       - "自民党 批判 コメント"
     video_ids: []
 
+  ishin_osaka:
+    label_ja: "大阪維新の会"
+    search_queries:
+      - "大阪維新の会 批判"
+      - "維新の会 吉村 街頭演説"
+      - "大阪万博 維新 批判"
+      - "維新の会 大阪都構想"
+    video_ids: []
+
+  reiwa_shinsengumi:
+    label_ja: "れいわ新選組（左派ポピュリズム比較対象）"
+    search_queries:
+      - "れいわ新選組 山本太郎 街頭演説"
+      - "れいわ新選組 消費税"
+      - "山本太郎 国会 質疑"
+      - "れいわ新選組 批判"
+    video_ids: []
+
 # 収集時のデフォルト設定
 defaults:
   max_videos_per_query: 15       # 検索クエリ1件あたり取得する動画数の上限

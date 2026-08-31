@@ -1,0 +1,82 @@
+日米独クロスナショナル比較: 経済的破壊の当事者性（主観的所得水準・雇用状態）が
+議会/公務員への信頼に与える効果。WVS Time Series Wave 6+7（国により実施年が異なる）。
+Ricci理論の予測: 経済的破壊の効果は米独で(負に)有意，日本では非有意 or 弱い、という
+対照が観察されるか。
+
+==========================================================================================
+(A) プール回帰＋交互作用項: 目的変数=trust_parl (議会への信頼 (E069_07))  N=10652
+式: trust_parl ~ income_level * C(country) + is_unemployed * C(country) + is_not_in_labor_force * C(country) + age + C(sex) + C(education)
+==========================================================================================
+=====================================================================================================================
+                                                        coef    std err          t      P>|t|      [0.025      0.975]
+---------------------------------------------------------------------------------------------------------------------
+Intercept                                             2.0283      0.049     41.330      0.000       1.932       2.125
+C(country)[T.United States]                          -0.3746      0.053     -7.012      0.000      -0.479      -0.270
+C(country)[T.Germany]                                 0.0576      0.063      0.908      0.364      -0.067       0.182
+C(sex)[T.2.0]                                         0.0399      0.014      2.941      0.003       0.013       0.067
+C(education)[T.2.0]                                  -0.0055      0.025     -0.221      0.825      -0.054       0.043
+C(education)[T.3.0]                                   0.0393      0.026      1.506      0.132      -0.012       0.090
+income_level                                          0.0100      0.018      0.550      0.582      -0.026       0.046
+income_level:C(country)[T.United States]              0.1091      0.027      4.109      0.000       0.057       0.161
+income_level:C(country)[T.Germany]                    0.1042      0.031      3.321      0.001       0.043       0.166
+is_unemployed                                        -0.0851      0.108     -0.791      0.429      -0.296       0.126
+is_unemployed:C(country)[T.United States]             0.1141      0.115      0.995      0.320      -0.111       0.339
+is_unemployed:C(country)[T.Germany]                   0.0414      0.121      0.341      0.733      -0.196       0.279
+is_not_in_labor_force                                 0.1218      0.029      4.140      0.000       0.064       0.179
+is_not_in_labor_force:C(country)[T.United States]    -0.0967      0.036     -2.662      0.008      -0.168      -0.025
+is_not_in_labor_force:C(country)[T.Germany]          -0.0544      0.038     -1.424      0.154      -0.129       0.020
+age                                                   0.0004      0.000      0.974      0.330      -0.000       0.001
+=====================================================================================================================
+
+交互作用項（『経済的破壊指標の効果が国によって異なるか』の検定）:
+  income_level:C(country)[T.United States]: coef=+0.1091  p=0.0000  *有意*
+  income_level:C(country)[T.Germany]: coef=+0.1042  p=0.0009  *有意*
+  is_unemployed:C(country)[T.United States]: coef=+0.1141  p=0.3200
+  is_unemployed:C(country)[T.Germany]: coef=+0.0414  p=0.7328
+  is_not_in_labor_force:C(country)[T.United States]: coef=-0.0967  p=0.0078  *有意*
+  is_not_in_labor_force:C(country)[T.Germany]: coef=-0.0544  p=0.1544
+
+(B) 国別回帰: 目的変数=trust_parl (議会への信頼 (E069_07))
+国                     N      income_level係数       p値     is_unemployed係数       p値
+Japan              2728             +0.0255   0.1570             -0.0482   0.6446
+United States      4621             +0.1458   0.0000             -0.0028   0.9427
+Germany            3303             +0.0886   0.0013             -0.0326   0.5840
+
+==========================================================================================
+(A) プール回帰＋交互作用項: 目的変数=trust_civil (公務員への信頼 (E069_08))  N=10701
+式: trust_civil ~ income_level * C(country) + is_unemployed * C(country) + is_not_in_labor_force * C(country) + age + C(sex) + C(education)
+==========================================================================================
+=====================================================================================================================
+                                                        coef    std err          t      P>|t|      [0.025      0.975]
+---------------------------------------------------------------------------------------------------------------------
+Intercept                                             1.9499      0.048     40.466      0.000       1.855       2.044
+C(country)[T.United States]                          -0.0368      0.053     -0.700      0.484      -0.140       0.066
+C(country)[T.Germany]                                 0.2576      0.062      4.149      0.000       0.136       0.379
+C(sex)[T.2.0]                                         0.0193      0.013      1.447      0.148      -0.007       0.045
+C(education)[T.2.0]                                   0.0389      0.024      1.611      0.107      -0.008       0.086
+C(education)[T.3.0]                                   0.1229      0.026      4.814      0.000       0.073       0.173
+income_level                                          0.0704      0.018      3.937      0.000       0.035       0.106
+income_level:C(country)[T.United States]              0.0517      0.026      1.982      0.048       0.001       0.103
+income_level:C(country)[T.Germany]                    0.0093      0.031      0.302      0.763      -0.051       0.069
+is_unemployed                                        -0.1240      0.105     -1.186      0.235      -0.329       0.081
+is_unemployed:C(country)[T.United States]             0.0462      0.112      0.414      0.679      -0.173       0.265
+is_unemployed:C(country)[T.Germany]                   0.0925      0.118      0.786      0.432      -0.138       0.323
+is_not_in_labor_force                                 0.0989      0.029      3.427      0.001       0.042       0.155
+is_not_in_labor_force:C(country)[T.United States]    -0.0565      0.036     -1.584      0.113      -0.126       0.013
+is_not_in_labor_force:C(country)[T.Germany]          -0.0514      0.037     -1.374      0.169      -0.125       0.022
+age                                                   0.0034      0.000      7.731      0.000       0.003       0.004
+=====================================================================================================================
+
+交互作用項（『経済的破壊指標の効果が国によって異なるか』の検定）:
+  income_level:C(country)[T.United States]: coef=+0.0517  p=0.0475  *有意*
+  income_level:C(country)[T.Germany]: coef=+0.0093  p=0.7625
+  is_unemployed:C(country)[T.United States]: coef=+0.0462  p=0.6792
+  is_unemployed:C(country)[T.Germany]: coef=+0.0925  p=0.4316
+  is_not_in_labor_force:C(country)[T.United States]: coef=-0.0565  p=0.1131
+  is_not_in_labor_force:C(country)[T.Germany]: coef=-0.0514  p=0.1694
+
+(B) 国別回帰: 目的変数=trust_civil (公務員への信頼 (E069_08))
+国                     N      income_level係数       p値     is_unemployed係数       p値
+Japan              2739             +0.0841   0.0000             -0.1046   0.3069
+United States      4618             +0.1186   0.0000             -0.0727   0.0743
+Germany            3344             +0.0906   0.0003             -0.0362   0.4956

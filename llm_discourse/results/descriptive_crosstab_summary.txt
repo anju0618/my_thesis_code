@@ -1,0 +1,50 @@
+YouTubeコメントのシンプルな記述統計（機械学習・埋め込みを介さない直接集計）
+
+==============================================================================
+トピック × 各変数のクロス集計・カイ二乗検定（機械学習を介さない直接集計）
+==============================================================================
+
+--- people_vs_elite ---
+people_vs_elite  False  True 
+topic                        
+immigration       4637    269
+sanseito          4227    492
+zaimusho_demo     3521   1390
+
+該当率(%):
+people_vs_elite  False  True 
+topic                        
+immigration       94.5    5.5
+sanseito          89.6   10.4
+zaimusho_demo     71.7   28.3
+カイ二乗統計量=1119.67  自由度=2  p値=0.000000  *有意*  Cramér's V=0.2775
+
+--- economic_resentment ---
+economic_resentment  False  True 
+topic                            
+immigration           4849     57
+sanseito              4677     42
+zaimusho_demo         4721    190
+
+該当率(%):
+economic_resentment  False  True 
+topic                            
+immigration           98.8    1.2
+sanseito              99.1    0.9
+zaimusho_demo         96.1    3.9
+カイ二乗統計量=135.54  自由度=2  p値=0.000000  *有意*  Cramér's V=0.0966
+
+--- theft_of_enjoyment ---
+theft_of_enjoyment  False  True 
+topic                           
+immigration          4575    335
+sanseito             4682     37
+zaimusho_demo        4871     39
+
+該当率(%):
+theft_of_enjoyment  False  True 
+topic                           
+immigration          93.2    6.8
+sanseito             99.2    0.8
+zaimusho_demo        99.2    0.8
+カイ二乗統計量=430.94  自由度=2  p値=0.000000  *有意*  Cramér's V=0.1722
