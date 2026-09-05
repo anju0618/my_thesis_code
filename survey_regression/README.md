@@ -1,5 +1,7 @@
 # 分析1：既存アンケート調査データによる機械学習分析（Python）
 
+*[English](README.en.md)*
+
 ISSP（International Social Survey Programme）およびWVS（World Values
 Survey）Time Seriesの日本データを用い，Random Forest回帰・SHAP・
 K-meansクラスタリングにより，政治的信頼・効力感を規定する要因を検証する。
